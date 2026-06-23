@@ -32,12 +32,16 @@ The plugin listens to OpenCode session events and updates the current session ti
 
 Automatic status changes:
 
+- new user prompt -> `[process]`
+- tool execution -> `[process]`
 - `session.status: busy` or `retry` -> `[process]`
 - `permission.asked` -> `[pending]`
 - `question.asked` -> `[pending]`
 - `session.error` -> `[pending]`
 - `session.idle` -> `[done]`, unless the session is held in `[pending]`, `[pushed]`, or `[closed]`
 - successful `git push` via the bash tool -> `[pushed]`
+
+The plugin only lets `session.status` move a session between `[process]` and `[done]` while a real user turn is active. This avoids noisy `process -> done -> process -> done` loops caused by internal OpenCode status updates.
 
 Manual semantic status changes:
 

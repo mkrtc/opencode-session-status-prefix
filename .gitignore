@@ -1,0 +1,4 @@
+node_modules/
+tmp/shared_ctx/
+.DS_Store
+*.log

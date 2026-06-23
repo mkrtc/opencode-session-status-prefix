@@ -8,6 +8,7 @@ Allowed status prefixes:
 - `[pushed]`: changes were successfully pushed to git.
 - `[done]`: requested work is complete and no user action is required.
 - `[closed]`: the user explicitly accepted or closed the task.
+- `[stoped]`: execution was manually stopped by the user.
 
 Rules:
 - Use the `session_status_prefix` tool when you intentionally change the semantic task state.
@@ -16,5 +17,6 @@ Rules:
 - Set `[pushed]` only after a successful `git push`.
 - Set `[done]` only when the requested task is actually complete.
 - Set `[closed]` only when the user explicitly asks to close or accept the task.
+- Set `[stoped]` only when execution was manually stopped by the user.
 - Preserve the existing title text after the prefix.
 - Do not write status-only messages in chat as a substitute for using the tool.

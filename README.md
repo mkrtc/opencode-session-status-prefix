@@ -1,6 +1,6 @@
 # OpenCode Session Status Prefix
 
-OpenCode plugin that keeps session titles prefixed with live task status like `[process]`, `[pending]`, `[done]`, `[pushed]`, and `[closed]`.
+OpenCode plugin that keeps session titles prefixed with live task status like `[process]`, `[pending]`, `[done]`, `[pushed]`, `[stoped]`, and `[closed]`.
 
 It is useful when you run many OpenCode sessions in parallel and want to scan the session list without opening every chat.
 
@@ -12,6 +12,7 @@ It is useful when you run many OpenCode sessions in parallel and want to scan th
 | `[process]` | The session is actively working. |
 | `[pushed]` | The agent successfully ran `git push`. |
 | `[done]` | The requested work is complete and no user action is required. |
+| `[stoped]` | Execution was manually stopped by the user. |
 | `[closed]` | The user explicitly accepted or closed the task. |
 
 The plugin preserves the existing session title. For example:
@@ -35,10 +36,11 @@ Automatic status changes:
 - new user prompt -> `[process]`
 - tool execution -> `[process]`
 - `session.status: busy` or `retry` -> `[process]`
+- manual session interruption / stop button -> `[stoped]`
 - `permission.asked` -> `[pending]`
 - `question.asked` -> `[pending]`
 - `session.error` -> `[pending]`
-- `session.idle` -> `[done]`, unless the session is held in `[pending]`, `[pushed]`, or `[closed]`
+- `session.idle` -> `[done]`, unless the session is held in `[pending]`, `[pushed]`, `[stoped]`, or `[closed]`
 - successful `git push` via the bash tool -> `[pushed]`
 
 The plugin only lets `session.status` move a session between `[process]` and `[done]` while a real user turn is active. This avoids noisy `process -> done -> process -> done` loops caused by internal OpenCode status updates.
@@ -139,6 +141,7 @@ The installer registers `session-status-prefix.instructions.md` as a global Open
 - set `[pending]` before blocking questions;
 - set `[pushed]` only after a successful push;
 - set `[done]` only when the task is complete;
+- set `[stoped]` only when execution was manually stopped;
 - set `[closed]` only when the user explicitly closes or accepts the task.
 
 ## Troubleshooting

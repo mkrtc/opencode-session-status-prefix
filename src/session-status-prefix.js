@@ -1,8 +1,8 @@
 import { tool } from "@opencode-ai/plugin"
 
-const STATUSES = new Set(["pending", "process", "pushed", "done", "closed"])
-const PREFIX_RE = /^\[(pending|process|pushed|done|closed)\]\s*/i
-const TERMINAL_HOLDS = new Set(["pending", "pushed", "closed"])
+const STATUSES = new Set(["pending", "process", "pushed", "done", "closed", "stoped"])
+const PREFIX_RE = /^\[(pending|process|pushed|done|closed|stoped)\]\s*/i
+const TERMINAL_HOLDS = new Set(["pending", "pushed", "closed", "stoped"])
 const DEFAULT_TITLE_RE = /^new session(?:\s*[-:]\s*.*)?$/i
 
 function normalizeStatus(value) {
@@ -54,6 +54,33 @@ function eventTitle(event) {
 function prefixStatus(title) {
   const match = String(title ?? "").match(PREFIX_RE)
   return match ? match[1].toLowerCase() : null
+}
+
+function eventErrorText(event) {
+  const properties = event?.properties
+  const error = properties?.error
+  const parts = [
+    error?.name,
+    error?.message,
+    properties?.name,
+    properties?.message,
+    event?.type,
+  ]
+  return parts.filter(Boolean).join(" ").toLowerCase()
+}
+
+function isStopEvent(event) {
+  const text = eventErrorText(event)
+  return (
+    event?.type === "session.aborted" ||
+    event?.type === "session.cancelled" ||
+    event?.type === "session.interrupted" ||
+    text.includes("messageabortederror") ||
+    text.includes("aborted") ||
+    text.includes("cancelled") ||
+    text.includes("canceled") ||
+    text.includes("interrupted")
+  )
 }
 
 function isSuccessfulGitPush(input, output) {
@@ -171,6 +198,11 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
     return setStatus(sessionID, "pending", { hold: true, reason })
   }
 
+  async function setStoped(sessionID, reason) {
+    activeTurns.delete(sessionID)
+    return setStatus(sessionID, "stoped", { hold: true, reason })
+  }
+
   return {
     "chat.message": async (input) => {
       try {
@@ -205,6 +237,16 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
 
         if (event.type === "session.updated") {
           await handleSessionUpdated(sessionID, event)
+          return
+        }
+
+        if (
+          event.type === "session.aborted" ||
+          event.type === "session.cancelled" ||
+          event.type === "session.interrupted" ||
+          (event.type === "session.error" && isStopEvent(event))
+        ) {
+          await setStoped(sessionID, event.type)
           return
         }
 
@@ -250,11 +292,11 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
     tool: {
       session_status_prefix: tool({
         description:
-          "Update the current OpenCode session title prefix. Use status: pending, process, pushed, done, or closed. This preserves the existing title after the prefix.",
+          "Update the current OpenCode session title prefix. Use status: pending, process, pushed, done, closed, or stoped. This preserves the existing title after the prefix.",
         args: {
           status: tool.schema
             .string()
-            .describe("One of: pending, process, pushed, done, closed."),
+            .describe("One of: pending, process, pushed, done, closed, stoped."),
           title: tool.schema
             .string()
             .optional()

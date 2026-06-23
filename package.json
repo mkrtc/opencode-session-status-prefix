@@ -1,7 +1,7 @@
 {
   "name": "opencode-session-status-prefix",
-  "version": "0.1.2",
-  "description": "OpenCode plugin that keeps session titles prefixed with live task status like [process], [pending], [done], [pushed], and [closed].",
+  "version": "0.1.3",
+  "description": "OpenCode plugin that keeps session titles prefixed with live task status like [process], [pending], [done], [pushed], [stoped], and [closed].",
   "type": "module",
   "license": "MIT",
   "scripts": {

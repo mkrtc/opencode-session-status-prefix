@@ -25,7 +25,7 @@ Auth refactor
 
 It also avoids replacing a not-yet-generated OpenCode title with `[status] New session`. If OpenCode has not produced a real title yet, the plugin delays the prefix and reapplies it after the session title is updated.
 
-Manual renames are preserved. If you rename a session in OpenCode Desktop, the plugin treats the new title as the base title and reapplies the current prefix to it.
+Manual renames are preserved. If you rename a session in OpenCode Desktop and remove or change the title text after the prefix, the plugin treats the new title as the base title and reapplies the current prefix to it.
 
 ## What It Does
 

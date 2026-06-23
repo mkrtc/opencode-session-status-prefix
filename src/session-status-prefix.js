@@ -145,14 +145,14 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
         path: { id: sessionID },
         body: { title: nextTitle },
       })
-    }
 
-    await log("info", "session status prefix updated", {
-      sessionID,
-      status,
-      title: nextTitle,
-      reason: options.reason,
-    })
+      await log("info", "session status prefix updated", {
+        sessionID,
+        status,
+        title: nextTitle,
+        reason: options.reason,
+      })
+    }
 
     return nextTitle
   }
@@ -162,20 +162,23 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
     const updatedStatus = prefixStatus(updatedTitle)
 
     if (updatedStatus) {
-      desired.set(sessionID, updatedStatus)
+      if (isUsableBaseTitle(updatedTitle)) {
+        lastBaseTitle.set(sessionID, stripPrefix(updatedTitle))
+      }
+      return null
     }
 
-    if (isUsableBaseTitle(updatedTitle)) {
-      lastBaseTitle.set(sessionID, stripPrefix(updatedTitle))
-    }
+    if (!isUsableBaseTitle(updatedTitle)) return null
 
     const status = desired.get(sessionID)
     if (!status) return null
 
+    lastBaseTitle.set(sessionID, stripPrefix(updatedTitle))
+
     return setStatus(sessionID, status, {
-      title: updatedTitle ?? undefined,
+      title: updatedTitle,
       hold: holds.has(sessionID) || TERMINAL_HOLDS.has(status),
-      reason: "session.updated",
+      reason: "manual-rename",
     })
   }
 

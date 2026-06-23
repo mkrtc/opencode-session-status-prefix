@@ -45,6 +45,17 @@ function eventStatusType(event) {
   return null
 }
 
+function eventTitle(event) {
+  const properties = event?.properties
+  const value = properties?.info?.title ?? properties?.session?.title ?? properties?.title
+  return typeof value === "string" ? value : null
+}
+
+function prefixStatus(title) {
+  const match = String(title ?? "").match(PREFIX_RE)
+  return match ? match[1].toLowerCase() : null
+}
+
 function isSuccessfulGitPush(input, output) {
   if (input?.tool !== "bash") return false
   const command = String(input?.args?.command ?? output?.args?.command ?? "").trim()
@@ -119,12 +130,25 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
     return nextTitle
   }
 
-  async function reapplyDesiredStatus(sessionID, reason) {
+  async function handleSessionUpdated(sessionID, event) {
+    const updatedTitle = eventTitle(event)
+    const updatedStatus = prefixStatus(updatedTitle)
+
+    if (updatedStatus) {
+      desired.set(sessionID, updatedStatus)
+    }
+
+    if (isUsableBaseTitle(updatedTitle)) {
+      lastBaseTitle.set(sessionID, stripPrefix(updatedTitle))
+    }
+
     const status = desired.get(sessionID)
     if (!status) return null
+
     return setStatus(sessionID, status, {
-      hold: holds.has(sessionID),
-      reason,
+      title: updatedTitle ?? undefined,
+      hold: holds.has(sessionID) || TERMINAL_HOLDS.has(status),
+      reason: "session.updated",
     })
   }
 
@@ -164,7 +188,7 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
         }
 
         if (event.type === "session.updated") {
-          await reapplyDesiredStatus(sessionID, "session.updated")
+          await handleSessionUpdated(sessionID, event)
           return
         }
 

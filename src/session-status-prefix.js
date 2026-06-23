@@ -95,7 +95,6 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
   const holds = new Map()
   const desired = new Map()
   const lastBaseTitle = new Map()
-  const activeTurns = new Set()
 
   async function log(level, message, extra) {
     try {
@@ -182,39 +181,23 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
 
   async function setProcess(sessionID, reason) {
     holds.delete(sessionID)
-    activeTurns.add(sessionID)
     return setStatus(sessionID, "process", { hold: false, reason })
   }
 
   async function setDoneIfAllowed(sessionID, reason) {
-    if (!activeTurns.has(sessionID)) return null
-    activeTurns.delete(sessionID)
     if (holds.has(sessionID)) return null
     return setStatus(sessionID, "done", { hold: false, reason })
   }
 
   async function setPending(sessionID, reason) {
-    activeTurns.delete(sessionID)
     return setStatus(sessionID, "pending", { hold: true, reason })
   }
 
   async function setStoped(sessionID, reason) {
-    activeTurns.delete(sessionID)
     return setStatus(sessionID, "stoped", { hold: true, reason })
   }
 
   return {
-    "chat.message": async (input) => {
-      try {
-        if (typeof input?.sessionID !== "string" || input.sessionID.length === 0) return
-        await setProcess(input.sessionID, "chat.message")
-      } catch (error) {
-        await log("error", "chat.message handler failed", {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
-    },
-
     event: async ({ event }) => {
       try {
         const sessionID = eventSessionID(event)
@@ -222,7 +205,7 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
 
         if (event.type === "session.status") {
           const status = eventStatusType(event)
-          if ((status === "busy" || status === "retry") && activeTurns.has(sessionID)) {
+          if (status === "busy" || status === "retry") {
             await setProcess(sessionID, "session.status")
           } else if (status === "idle") {
             await setDoneIfAllowed(sessionID, "session.status")
@@ -272,18 +255,6 @@ export const SessionStatusPrefixPlugin = async ({ client }) => {
         await setStatus(input.sessionID, "pushed", { hold: true, reason: "git.push" })
       } catch (error) {
         await log("error", "git push status update failed", {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
-    },
-
-    "tool.execute.before": async (input) => {
-      try {
-        if (typeof input?.sessionID !== "string" || input.sessionID.length === 0) return
-        if (input.tool === "session_status_prefix") return
-        await setProcess(input.sessionID, "tool.execute.before")
-      } catch (error) {
-        await log("error", "tool execution status update failed", {
           error: error instanceof Error ? error.message : String(error),
         })
       }
